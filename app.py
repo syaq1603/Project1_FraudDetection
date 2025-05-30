@@ -17,7 +17,13 @@ from sklearn.model_selection import train_test_split
 
 @st.cache_resource
 def load_model():
-    model_path = "fraud_model_py13.joblib"  # 🔁 New file name to bypass old cache
+    import os
+    import joblib
+    import pandas as pd
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.model_selection import train_test_split
+
+    model_path = "fraud_model_py13.joblib"
 
     if os.path.exists(model_path):
         print("✅ Existing model found.")
@@ -26,10 +32,13 @@ def load_model():
     print("🔁 No model found. Training a new model...")
 
     df = pd.read_csv("simulated_transactions.csv")
+    print("📊 Columns in CSV:", df.columns.tolist())  # ✅ Debug: Print column names
 
-    # Drop non-numeric or ID columns (adjust as needed)
-    X = df.drop(columns=["is_fraud", "transaction_id", "timestamp", "user_id"])
-    y = df["is_fraud"]
+    # List of columns to drop if they exist
+    drop_cols = [col for col in ["is_fraud", "transaction_id", "timestamp", "user_id"] if col in df.columns]
+
+    X = df.drop(columns=drop_cols, errors='ignore')
+    y = df["is_fraud"] if "is_fraud" in df.columns else df.iloc[:, -1]  # fallback to last column
 
     X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -39,6 +48,7 @@ def load_model():
     joblib.dump(model, model_path)
     print(f"✅ Model trained and saved as {model_path}")
     return model
+
     
 model = load_model()
 df = load_data()
