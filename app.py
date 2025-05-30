@@ -23,15 +23,11 @@ def load_model():
         return joblib.load(model_path)
     else:
         df = pd.read_csv("simulated_transactions.csv")
-
         if "is_fraud" not in df.columns:
-            raise ValueError("❌ Column 'is_fraud' not found in dataset. Please check your data.")
-
-        drop_cols = ["transaction_id", "user_id", "timestamp", "is_fraud"]
-        drop_cols = [col for col in drop_cols if col in df.columns]
+            raise ValueError("❌ Column 'is_fraud' not found in dataset. Please check your CSV file.")
 
         y = df["is_fraud"]
-        X = df.drop(columns=drop_cols, errors="ignore")
+        X = df.drop(columns=["transaction_id", "user_id", "timestamp", "is_fraud"], errors="ignore")
         X = X.select_dtypes(include=["number"])
 
         X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -50,9 +46,9 @@ def load_data():
 model = load_model()
 df = load_data()
 
-# === Page Setup ===
-st.set_page_config(page_title="Fraud Detection Dashboard", layout="wide")
-st.title("💸 Real-Time Fraud Detection Dashboard")
+# === Dashboard UI ===
+st.title("🔍 Fraud Detection Dashboard")
+st.write("This dashboard allows you to visualize and predict fraudulent transactions.")
 
 # === Sidebar Filters ===
 st.sidebar.header("🔍 Filter Transactions")
