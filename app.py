@@ -35,10 +35,16 @@ def load_model():
     print("📊 Columns in CSV:", df.columns.tolist())  # ✅ Debug: Print column names
 
     # List of columns to drop if they exist
-    drop_cols = [col for col in ["is_fraud", "transaction_id", "timestamp", "user_id"] if col in df.columns]
+    # Columns to exclude
+    drop_cols = ["transaction_id", "user_id", "timestamp", "is_fraud"]
+    drop_cols = [col for col in drop_cols if col in df.columns]
 
-    X = df.drop(columns=drop_cols, errors='ignore')
-    y = df["is_fraud"] if "is_fraud" in df.columns else df.iloc[:, -1]  # fallback to last column
+    # Prepare features and target
+    y = df["is_fraud"]
+    X = df.drop(columns=drop_cols, errors="ignore")
+
+    # Use only numeric features
+    X = X.select_dtypes(include=["number"])
 
     X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
