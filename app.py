@@ -17,44 +17,35 @@ from sklearn.model_selection import train_test_split
 
 @st.cache_resource
 def load_model():
-    import os
-    import joblib
     import pandas as pd
-    from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
+    from sklearn.ensemble import RandomForestClassifier
+    import joblib
 
-    model_path = "fraud_model_py13.joblib"
+    model_path = "fraud_model.joblib"
 
     if os.path.exists(model_path):
-        print("✅ Existing model found.")
         return joblib.load(model_path)
+    else:
+        df = pd.read_csv("simulated_transactions.csv")
 
-    print("🔁 No model found. Training a new model...")
+        if "is_fraud" not in df.columns:
+            raise ValueError("❌ Column 'is_fraud' not found in dataset. Please check your data.")
 
-    df = pd.read_csv("simulated_transactions.csv")
-    print("📊 Columns in CSV:", df.columns.tolist())  # ✅ Debug: Print column names
+        # Drop non-feature columns
+        drop_cols = ["transaction_id", "user_id", "timestamp", "is_fraud"]
+        drop_cols = [col for col in drop_cols if col in df.columns]
 
-    # List of columns to drop if they exist
-    # Columns to exclude
-    drop_cols = ["transaction_id", "user_id", "timestamp", "is_fraud"]
-    drop_cols = [col for col in drop_cols if col in df.columns]
+        y = df["is_fraud"]
+        X = df.drop(columns=drop_cols, errors="ignore")
+        X = X.select_dtypes(include=["number"])
 
-    # Prepare features and target
-    y = df["is_fraud"]
-    X = df.drop(columns=drop_cols, errors="ignore")
+        X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
 
-    # Use only numeric features
-    X = X.select_dtypes(include=["number"])
-
-    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-
-    joblib.dump(model, model_path)
-    print(f"✅ Model trained and saved as {model_path}")
-    return model
-
+        joblib.dump(model, model_path)
+        return model
     
 model = load_model()
 df = load_data()
