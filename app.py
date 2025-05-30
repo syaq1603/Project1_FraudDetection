@@ -2,49 +2,71 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+import plotly.express as px
+from sklearn.metrics import confusion_matrix, roc_curve, auc
 
-# --- Load Data ---
+# === Load data ===
 @st.cache_data
 def load_data():
     return pd.read_csv("simulated_transactions.csv")
 
-st.title("💸 Fraud Detection Dashboard")
 df = load_data()
 
-# --- Show Dataset Preview ---
-st.subheader("📄 Data Preview")
-st.dataframe(df.head())
+# === Page Config ===
+st.set_page_config(page_title="Fraud Detection Dashboard", layout="wide")
 
-# --- Show Class Balance ---
-st.subheader("📊 Fraud vs Non-Fraud")
-fraud_counts = df["fraud_flag"].value_counts()
-st.bar_chart(fraud_counts)
+# === Title and Description ===
+st.title("💸 Fraud Detection Dashboard")
+st.markdown("This dashboard visualizes synthetic financial transactions with fraud detection insights.")
 
-# --- Confusion Matrix Heatmap ---
-st.subheader("🧱 Confusion Matrix (Simulated Predictions)")
-cm = confusion_matrix(df["fraud_flag"], df["fraud_flag"])  # demo: compare to itself
-fig_cm, ax_cm = plt.subplots()
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Non-Fraud", "Fraud"], yticklabels=["Non-Fraud", "Fraud"], ax=ax_cm)
-ax_cm.set_xlabel("Predicted")
-ax_cm.set_ylabel("Actual")
+# === Sidebar Filter ===
+st.sidebar.header("🔍 Filter Options")
+selected_channel = st.sidebar.selectbox("Select Transaction Channel", df["channel"].unique())
+filtered_df = df[df["channel"] == selected_channel]
+
+# === KPI Metrics ===
+st.markdown("### 📊 Key Metrics")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("Total Transactions", len(filtered_df))
+with col2:
+    st.metric("Fraud Cases", int(filtered_df["fraud_flag"].sum()))
+with col3:
+    st.metric("Fraud Rate", f"{100 * filtered_df['fraud_flag'].mean():.2f}%")
+
+# === Bar Plot: Fraud by User Type ===
+st.markdown("### 👤 Fraud Distribution by User Type")
+fig_bar = px.histogram(filtered_df, x="user_type", color="fraud_flag",
+                       barmode="group", title="Fraud vs Non-Fraud by User Type",
+                       labels={"fraud_flag": "Fraud Flag", "user_type": "User Type"})
+st.plotly_chart(fig_bar, use_container_width=True)
+
+# === Confusion Matrix (self-compared demo) ===
+st.markdown("### 🧱 Confusion Matrix")
+cm = confusion_matrix(filtered_df["fraud_flag"], filtered_df["fraud_flag"])  # demo: self comparison
+fig_cm, ax = plt.subplots()
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Non-Fraud", "Fraud"], yticklabels=["Non-Fraud", "Fraud"], ax=ax)
+ax.set_xlabel("Predicted")
+ax.set_ylabel("Actual")
 st.pyplot(fig_cm)
 
-# --- ROC Curve ---
-st.subheader("📈 ROC Curve (Simulated Scores)")
-# For demo, fake predictions
-df["fraud_score"] = df["fraud_flag"] + (0.1 * (1 - df["fraud_flag"]))  # fake scores
-fpr, tpr, _ = roc_curve(df["fraud_flag"], df["fraud_score"])
+# === ROC Curve (fake scores for demo) ===
+st.markdown("### 📈 ROC Curve")
+filtered_df["fraud_score"] = filtered_df["fraud_flag"] + 0.1 * (1 - filtered_df["fraud_flag"])
+fpr, tpr, _ = roc_curve(filtered_df["fraud_flag"], filtered_df["fraud_score"])
 roc_auc = auc(fpr, tpr)
 
-fig_roc, ax_roc = plt.subplots()
-ax_roc.plot(fpr, tpr, label=f"AUC = {roc_auc:.2f}")
-ax_roc.plot([0, 1], [0, 1], "k--")
-ax_roc.set_xlabel("False Positive Rate")
-ax_roc.set_ylabel("True Positive Rate")
-ax_roc.set_title("ROC Curve")
-ax_roc.legend()
+fig_roc, ax2 = plt.subplots()
+ax2.plot(fpr, tpr, label=f"AUC = {roc_auc:.2f}")
+ax2.plot([0, 1], [0, 1], "k--")
+ax2.set_xlabel("False Positive Rate")
+ax2.set_ylabel("True Positive Rate")
+ax2.set_title("ROC Curve")
+ax2.legend()
 st.pyplot(fig_roc)
 
-# --- Footer ---
-st.markdown("Made with ❤️ using Streamlit")
+# === Footer ===
+st.markdown("---")
+st.markdown("Made with ❤️ using Streamlit • Data is 100% simulated • [GitHub Repo](https://github.com/syaq1603/Project1_FraudDetection)")
+
