@@ -18,22 +18,18 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 @st.cache_resource
 def load_model():
     model_path = "fraud_model.joblib"
-
     if os.path.exists(model_path):
         return joblib.load(model_path)
     else:
         df = pd.read_csv("simulated_transactions.csv")
         if "is_fraud" not in df.columns:
             raise ValueError("❌ Column 'is_fraud' not found in dataset. Please check your CSV file.")
-
         y = df["is_fraud"]
         X = df.drop(columns=["transaction_id", "user_id", "timestamp", "is_fraud"], errors="ignore")
         X = X.select_dtypes(include=["number"])
-
         X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
-
         joblib.dump(model, model_path)
         return model
 
@@ -42,6 +38,7 @@ def load_model():
 def load_data():
     return pd.read_csv("simulated_transactions.csv")
 
+# === Load adversary simulation data ===
 @st.cache_data
 def load_adversary_data():
     return pd.read_csv("simulated_adversaries.csv")
@@ -49,11 +46,10 @@ def load_adversary_data():
 # === Load model and data ===
 model = load_model()
 df = load_data()
-adversary_df = load_adversary_data()
 
 # === Dashboard UI ===
 st.title("🔍 Fraud Detection Dashboard")
-st.write("This dashboard allows you to visualize and predict fraudulent transactions, including adversarial behaviors.")
+st.write("This dashboard allows you to visualize and predict fraudulent transactions.")
 
 # === Sidebar Filters ===
 st.sidebar.header("🔍 Filter Transactions")
@@ -62,7 +58,7 @@ amount_range = st.sidebar.slider("Select Amount Range", float(df["amount"].min()
 filtered = df[(df["channel"] == channel) & (df["amount"].between(*amount_range))]
 
 # === Tabs ===
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Charts", "🤖 Predict Fraud", "🕵️ Adversaries"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Charts", "🤖 Predict Fraud", "🕵️‍♀️ Adversaries"])
 
 # === TAB 1: Overview ===
 with tab1:
@@ -111,7 +107,6 @@ with tab3:
         location = st.selectbox("Location", df["location"].unique())
         user_type = st.selectbox("User Type", df["user_type"].unique())
         age = st.slider("Account Age (days)", 0, 2000, 180)
-
         submit = st.form_submit_button("🔍 Predict Fraud")
 
     if submit:
@@ -123,18 +118,14 @@ with tab3:
             "user_type": user_type,
             "account_age_days": age
         }])
-
-        # One-hot encode to match training format
         input_encoded = pd.get_dummies(input_df)
         model_columns = model.feature_names_in_
         for col in model_columns:
             if col not in input_encoded.columns:
                 input_encoded[col] = 0
         input_encoded = input_encoded[model_columns]
-
         pred = model.predict(input_encoded)[0]
         prob = model.predict_proba(input_encoded)[0][1]
-
         if pred == 1:
             st.error(f"🚨 Fraud Detected! Risk Score: {prob:.2f}")
         else:
@@ -142,19 +133,20 @@ with tab3:
 
 # === TAB 4: Adversary Simulation ===
 with tab4:
-    st.subheader("🕵️‍♀️ Simulated Adversarial Behaviors")
-    st.write("Sample of simulated adversarial transactions:")
-    st.dataframe(adversary_df.head())
+    st.subheader("Simulated Adversarial Behaviors")
+    adv_df = load_adversary_data()
+    st.dataframe(adv_df.head())
 
-    st.write("### Frequency of Adversary Types")
-    fig = px.histogram(adversary_df, x="adversary_type", color="adversary_type")
-    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("### Fraud Types Breakdown")
+    fig_adv = px.histogram(adv_df, x="adversary_type", color="is_fraud", barmode="group", title="Adversary Type vs Fraud Label")
+    st.plotly_chart(fig_adv, use_container_width=True)
 
-    high_value = adversary_df[adversary_df['amount'] > 10000]
-    st.write("### High-Value Suspicious Transactions")
-    st.dataframe(high_value)
+    st.markdown("### Channel & Amount Distribution")
+    fig_channel = px.box(adv_df, x="channel", y="amount", color="adversary_type", title="Amount by Channel and Adversary Type")
+    st.plotly_chart(fig_channel, use_container_width=True)
 
 # === Footer ===
 st.markdown("---")
 st.markdown("Made with ❤️ by Rubiyah • Synthetic data only • [GitHub Repo](https://github.com/syaq1603/Project1_FraudDetection)")
+
 
