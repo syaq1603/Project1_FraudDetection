@@ -1,4 +1,8 @@
 import streamlit as st
+
+# MUST be the first Streamlit command
+st.set_page_config(page_title="Fraud Detection Dashboard", layout="wide")
+
 import pandas as pd
 import numpy as np
 import joblib
