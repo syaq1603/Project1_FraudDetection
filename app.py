@@ -1,4 +1,3 @@
-# Force rebuild to use Python 3.10
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,22 +5,14 @@ import joblib
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, roc_curve, auc
-
-# === Load model and data ===
 import os
-import joblib
-import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, roc_curve, auc
 
+# === Load model ===
 @st.cache_resource
 def load_model():
-    import pandas as pd
-    from sklearn.model_selection import train_test_split
-    from sklearn.ensemble import RandomForestClassifier
-    import joblib
-
     model_path = "fraud_model.joblib"
 
     if os.path.exists(model_path):
@@ -32,7 +23,6 @@ def load_model():
         if "is_fraud" not in df.columns:
             raise ValueError("❌ Column 'is_fraud' not found in dataset. Please check your data.")
 
-        # Drop non-feature columns
         drop_cols = ["transaction_id", "user_id", "timestamp", "is_fraud"]
         drop_cols = [col for col in drop_cols if col in df.columns]
 
@@ -46,7 +36,13 @@ def load_model():
 
         joblib.dump(model, model_path)
         return model
-    
+
+# === Load data ===
+@st.cache_data
+def load_data():
+    return pd.read_csv("simulated_transactions.csv")
+
+# === Load model and data ===
 model = load_model()
 df = load_data()
 
