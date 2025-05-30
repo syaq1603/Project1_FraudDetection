@@ -42,13 +42,18 @@ def load_model():
 def load_data():
     return pd.read_csv("simulated_transactions.csv")
 
+@st.cache_data
+def load_adversary_data():
+    return pd.read_csv("simulated_adversaries.csv")
+
 # === Load model and data ===
 model = load_model()
 df = load_data()
+adversary_df = load_adversary_data()
 
 # === Dashboard UI ===
 st.title("🔍 Fraud Detection Dashboard")
-st.write("This dashboard allows you to visualize and predict fraudulent transactions.")
+st.write("This dashboard allows you to visualize and predict fraudulent transactions, including adversarial behaviors.")
 
 # === Sidebar Filters ===
 st.sidebar.header("🔍 Filter Transactions")
@@ -57,7 +62,7 @@ amount_range = st.sidebar.slider("Select Amount Range", float(df["amount"].min()
 filtered = df[(df["channel"] == channel) & (df["amount"].between(*amount_range))]
 
 # === Tabs ===
-tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Charts", "🤖 Predict Fraud"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "📈 Charts", "🤖 Predict Fraud", "🕵️ Adversaries"])
 
 # === TAB 1: Overview ===
 with tab1:
@@ -135,10 +140,21 @@ with tab3:
         else:
             st.success(f"✅ Legitimate Transaction. Risk Score: {prob:.2f}")
 
+# === TAB 4: Adversary Simulation ===
+with tab4:
+    st.subheader("🕵️‍♀️ Simulated Adversarial Behaviors")
+    st.write("Sample of simulated adversarial transactions:")
+    st.dataframe(adversary_df.head())
+
+    st.write("### Frequency of Adversary Types")
+    fig = px.histogram(adversary_df, x="adversary_type", color="adversary_type")
+    st.plotly_chart(fig, use_container_width=True)
+
+    high_value = adversary_df[adversary_df['amount'] > 10000]
+    st.write("### High-Value Suspicious Transactions")
+    st.dataframe(high_value)
+
 # === Footer ===
 st.markdown("---")
 st.markdown("Made with ❤️ by Rubiyah • Synthetic data only • [GitHub Repo](https://github.com/syaq1603/Project1_FraudDetection)")
-
-
-
 
