@@ -9,14 +9,36 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 
 # === Load model and data ===
+import os
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
 @st.cache_resource
 def load_model():
-    return joblib.load("fraud_model.joblib")
+    model_path = "fraud_model.joblib"
+    
+    if os.path.exists(model_path):
+        return joblib.load(model_path)
+    
+    # Load the data for training
+    df = pd.read_csv("simulated_transactions.csv")
+    
+    # Drop non-numeric or ID columns (adjust as needed)
+    X = df.drop(columns=["is_fraud", "transaction_id", "timestamp", "user_id"])
+    y = df["is_fraud"]
 
-@st.cache_data
-def load_data():
-    return pd.read_csv("simulated_transactions.csv")
+    # Train-test split
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
+    # Train a basic model
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
+    # Save the model
+    joblib.dump(model, model_path)
+
+    return model
+    
 model = load_model()
 df = load_data()
 
