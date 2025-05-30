@@ -10,33 +10,34 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 
 # === Load model and data ===
 import os
+import joblib
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 @st.cache_resource
 def load_model():
-    model_path = "fraud_model.joblib"
-    
+    model_path = "fraud_model_py13.joblib"  # 🔁 New file name to bypass old cache
+
     if os.path.exists(model_path):
+        print("✅ Existing model found.")
         return joblib.load(model_path)
-    
-    # Load the data for training
+
+    print("🔁 No model found. Training a new model...")
+
     df = pd.read_csv("simulated_transactions.csv")
-    
+
     # Drop non-numeric or ID columns (adjust as needed)
     X = df.drop(columns=["is_fraud", "transaction_id", "timestamp", "user_id"])
     y = df["is_fraud"]
 
-    # Train-test split
     X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Train a basic model
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
 
-    # Save the model
     joblib.dump(model, model_path)
-
+    print(f"✅ Model trained and saved as {model_path}")
     return model
     
 model = load_model()
